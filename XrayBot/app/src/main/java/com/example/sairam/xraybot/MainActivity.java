@@ -3,8 +3,10 @@ package com.example.sairam.xraybot;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.Toast;
 
 import java.io.BufferedReader;
 import java.io.DataOutput;
@@ -37,12 +39,13 @@ public class MainActivity extends Activity {
     }
 
     private String uploadImage(InputStream imageStream) throws IOException{
+        String serverURL = "http://10.4.59.68:5000/api/test";
         String boundary = "*****";
         String crlf = "\r\n";
         String twoHyphens = "--";
-        String filename = "myfile.jpeg";
+        String fileName = "myfile.jpeg";
         //Need to update url
-        URL url = new URL("http://10.4.59.68/api/test");
+        URL url = new URL(serverURL);
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         DataOutputStream dos = null;
         conn.setDoInput(true);
@@ -53,13 +56,13 @@ public class MainActivity extends Activity {
         conn.setRequestProperty("Cache-Control", "no-cache");
         conn.setRequestProperty("ENCTYPE", "multipart/form-data");
         conn.setRequestProperty("Content-Type", "multipart/form-data;boundary=" + boundary);
+        conn.setRequestProperty("uploaded_file", fileName);
 
         dos = new DataOutputStream(conn.getOutputStream());
         dos.writeBytes(twoHyphens + boundary + crlf);
         dos.writeBytes("Content-Disposition: form-data; name=\"uploaded_file\"; filename=\""
-                    + filename + "\"" + crlf);
+                    + fileName + "\"" + crlf);
         dos.writeBytes(crlf);
-
         byte[] buffer;
         int bufferSize, bytesAvailable, bytesRead;
         int maxBufferSize = 1 * 1024 * 1024;
@@ -72,18 +75,29 @@ public class MainActivity extends Activity {
             dos.write(buffer, 0, bufferSize);
             bytesAvailable = imageStream.available();
             bufferSize = Math.min(maxBufferSize, bytesAvailable);
-            buffer = new byte[bufferSize];
+            bytesRead = imageStream.read(buffer, 0, bufferSize);
         }
+
+        dos.writeBytes(crlf);
+        dos.writeBytes(twoHyphens + boundary + twoHyphens + crlf);
+
         dos.writeBytes(twoHyphens + boundary + crlf);
         dos.writeBytes(crlf);
-
-        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-        String line = null;
-        StringBuilder sb = new StringBuilder();
-        while((line = bufferedReader.readLine()) != null){
-            sb.append(line);
+        if(conn.getResponseCode() == HttpURLConnection.HTTP_OK) {
+            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+            String line = null;
+            StringBuilder sb = new StringBuilder();
+            while ((line = bufferedReader.readLine()) != null) {
+                sb.append(line);
+            }
+            bufferedReader.close();
+            conn.disconnect();
+            return sb.toString();
         }
-        return sb.toString();
+        else{
+            conn.disconnect();
+            return "error not 200";
+        }
     }
 
     private void getAndUploadImage() {
@@ -97,8 +111,27 @@ public class MainActivity extends Activity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if(requestCode == PICK_XRAY_IMAGE && data != null) {
             try {
-                InputStream imageStream = MainActivity.this.getContentResolver().openInputStream(data.getData());
-                uploadImage(imageStream);
+                final InputStream imageStream = MainActivity.this.getContentResolver().openInputStream(data.getData());
+                new Thread(){
+                    @Override
+                    public void run() {
+                        if(imageStream != null) {
+                            String response = null;
+                            try {
+                                response = uploadImage(imageStream);
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+//                            Toast.makeText(MainActivity.this, response, Toast.LENGTH_SHORT).show();
+                            Log.d("MyLog", response);
+                        }
+                        else{
+//                            Toast.makeText(MainActivity.this, "Image not obtained", Toast.LENGTH_SHORT).show();
+                            Log.d("MyLog", "Img not obtained");
+                        }
+                    }
+                }.start();
+
             }catch (IOException e) {
                 e.printStackTrace();
             }
