@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+import android.os.Parcelable;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
@@ -14,6 +15,7 @@ import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
@@ -33,6 +35,7 @@ public class MainActivity extends Activity {
     EditText inputMsgEdt;
     List<UserMessage> chatlist;
     public static final int PICK_XRAY_IMAGE = 1;
+
     Handler handler = new Handler(Looper.getMainLooper()){
         @Override
         public void handleMessage(Message msg) {
@@ -41,6 +44,34 @@ public class MainActivity extends Activity {
             recyclerView.scrollToPosition(chatlist.size()-1);
         }
     };
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+//        Toast.makeText(this, "on save state ", Toast.LENGTH_SHORT).show();
+        super.onSaveInstanceState(outState);
+        outState.putParcelableArrayList("savedchat", (ArrayList) chatlist);
+    }
+
+    @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        if(savedInstanceState != null) {
+            ArrayList<UserMessage> arrayList = savedInstanceState.getParcelableArrayList("savedchat");
+            chatlist.clear();
+            chatlist.addAll(arrayList);
+            messageAdapter.notifyDataSetChanged();
+            recyclerView.scrollToPosition(chatlist.size() - 1);
+        }
+        else{
+            chatlist.add(new UserMessage("Hi", false));
+            chatlist.add(new UserMessage("I am DocBot", false));
+            chatlist.add(new UserMessage("Give me a chest X-Ray image." +
+                    " I'll analyse and tell you about it", false));
+            messageAdapter.notifyDataSetChanged();
+            recyclerView.scrollToPosition(chatlist.size() - 1);
+        }
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
@@ -74,12 +105,15 @@ public class MainActivity extends Activity {
         chatlist = new ArrayList<>();
         messageAdapter = new MessageAdapter(chatlist);
         recyclerView.setAdapter(messageAdapter);
-        chatlist.add(new UserMessage("Hi", false));
-        chatlist.add(new UserMessage("I am DocBot", false));
-        chatlist.add(new UserMessage("Give me a chest X-Ray image." +
-                " I'll analyse and tell you about it", false));
-        messageAdapter.notifyDataSetChanged();
-        recyclerView.scrollToPosition(chatlist.size()-1);
+
+        if(chatlist.size() == 0) {
+            chatlist.add(new UserMessage("Hi", false));
+            chatlist.add(new UserMessage("I am DocBot", false));
+            chatlist.add(new UserMessage("Give me a chest X-Ray image." +
+                    " I'll analyse and tell you about it", false));
+            messageAdapter.notifyDataSetChanged();
+            recyclerView.scrollToPosition(chatlist.size() - 1);
+        }
     }
 
     private String uploadImage(InputStream imageStream) throws IOException{
@@ -167,7 +201,6 @@ public class MainActivity extends Activity {
                             } catch (IOException e) {
                                 e.printStackTrace();
                             }
-//                            Toast.makeText(MainActivity.this, response, Toast.LENGTH_SHORT).show();
 
                             Message msg = new Message();
                             msg.obj = new UserMessage(response, false);
@@ -176,7 +209,6 @@ public class MainActivity extends Activity {
                             Log.d("MyLog", response);
                         }
                         else{
-//                            Toast.makeText(MainActivity.this, "Image not obtained", Toast.LENGTH_SHORT).show();
                             Log.d("MyLog", "Img not obtained");
                         }
                     }
