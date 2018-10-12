@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.Toast;
 
 import java.io.BufferedReader;
@@ -22,7 +23,7 @@ import java.net.URLConnection;
 
 public class MainActivity extends Activity {
 
-    Button uploadImgBtn;
+    ImageButton uploadImgBtn;
     public static final int PICK_XRAY_IMAGE = 1;
     @Override
     protected void onCreate(Bundle savedInstanceState){
@@ -81,8 +82,6 @@ public class MainActivity extends Activity {
         dos.writeBytes(crlf);
         dos.writeBytes(twoHyphens + boundary + twoHyphens + crlf);
 
-        dos.writeBytes(twoHyphens + boundary + crlf);
-        dos.writeBytes(crlf);
         if(conn.getResponseCode() == HttpURLConnection.HTTP_OK) {
             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
             String line = null;
@@ -96,7 +95,7 @@ public class MainActivity extends Activity {
         }
         else{
             conn.disconnect();
-            return "error not 200";
+            return "Error Response Code not 200";
         }
     }
 
