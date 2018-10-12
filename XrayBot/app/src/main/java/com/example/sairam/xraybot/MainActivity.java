@@ -3,28 +3,25 @@ package com.example.sairam.xraybot;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Message;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import java.io.BufferedReader;
-import java.io.DataOutput;
 import java.io.DataOutputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -34,8 +31,16 @@ public class MainActivity extends Activity {
     RecyclerView recyclerView;
     MessageAdapter messageAdapter;
     EditText inputMsgEdt;
-    List<Message> chatlist;
+    List<UserMessage> chatlist;
     public static final int PICK_XRAY_IMAGE = 1;
+    Handler handler = new Handler(Looper.getMainLooper()){
+        @Override
+        public void handleMessage(Message msg) {
+            chatlist.add((UserMessage) msg.obj);
+            messageAdapter.notifyDataSetChanged();
+            recyclerView.scrollToPosition(chatlist.size()-1);
+        }
+    };
     @Override
     protected void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
@@ -55,10 +60,13 @@ public class MainActivity extends Activity {
             @Override
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
 
-                chatlist.add( new Message(inputMsgEdt.getText().toString(), true));
-                chatlist.add( new Message(inputMsgEdt.getText().toString(), false));
-                messageAdapter.notifyDataSetChanged();
-                recyclerView.scrollToPosition(chatlist.size()-1);
+                if(!inputMsgEdt.getText().toString().isEmpty()) {
+                    chatlist.add(new UserMessage(inputMsgEdt.getText().toString(), true));
+                    chatlist.add(new UserMessage(inputMsgEdt.getText().toString(), false));
+                    messageAdapter.notifyDataSetChanged();
+                    recyclerView.scrollToPosition(chatlist.size() - 1);
+                    inputMsgEdt.setText("");
+                }
                 return true;
             }
         });
@@ -66,9 +74,9 @@ public class MainActivity extends Activity {
         chatlist = new ArrayList<>();
         messageAdapter = new MessageAdapter(chatlist);
         recyclerView.setAdapter(messageAdapter);
-        chatlist.add(new Message("Hi", false));
-        chatlist.add(new Message("I am DocBot", false));
-        chatlist.add(new Message("Give me a chest X-Ray image." +
+        chatlist.add(new UserMessage("Hi", false));
+        chatlist.add(new UserMessage("I am DocBot", false));
+        chatlist.add(new UserMessage("Give me a chest X-Ray image." +
                 " I'll analyse and tell you about it", false));
         messageAdapter.notifyDataSetChanged();
         recyclerView.scrollToPosition(chatlist.size()-1);
@@ -118,6 +126,9 @@ public class MainActivity extends Activity {
         dos.writeBytes(twoHyphens + boundary + twoHyphens + crlf);
 
         if(conn.getResponseCode() == HttpURLConnection.HTTP_OK) {
+            Message msg = new Message();
+            msg.obj = new UserMessage("Image Uploaded", true);
+            handler.sendMessage(msg);
             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
             String line = null;
             StringBuilder sb = new StringBuilder();
@@ -157,6 +168,11 @@ public class MainActivity extends Activity {
                                 e.printStackTrace();
                             }
 //                            Toast.makeText(MainActivity.this, response, Toast.LENGTH_SHORT).show();
+
+                            Message msg = new Message();
+                            msg.obj = new UserMessage(response, false);
+                            handler.sendMessage(msg);
+
                             Log.d("MyLog", response);
                         }
                         else{

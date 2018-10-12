@@ -19,9 +19,9 @@ public class MessageAdapter extends RecyclerView.Adapter <MessageAdapter.CustomV
             textView = itemView.findViewById(R.id.text_message);
         }
     }
-    List<Message> messageList;
+    List<UserMessage> messageList;
 
-    public MessageAdapter(List<Message> messageList){
+    public MessageAdapter(List<UserMessage> messageList){
         this.messageList = messageList;
     }
 

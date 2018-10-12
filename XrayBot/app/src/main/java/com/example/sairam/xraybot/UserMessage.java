@@ -1,10 +1,10 @@
 package com.example.sairam.xraybot;
 
-public class Message {
-    private String msg;
-    private boolean isMe;
+public class UserMessage {
+    public String msg;
+    public boolean isMe;
 
-    public Message(String msg, boolean isMe){
+    public UserMessage(String msg, boolean isMe){
         this.msg = msg;
         this.isMe = isMe;
     }
