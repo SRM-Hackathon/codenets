@@ -42,11 +42,11 @@ def test():
         pred_vals = model.predict(imagee)
         print(pred_vals)
         if (pred_vals[0][0]>pred_vals[0][1]):
-            print ('You are Normal with a probabality score of :', str(pred_vals[0][0]*100))
-            result = 'You are Normal with a probabality score of :', str(pred_vals[0][0]*100)
+            print ('You are Normal with a probabality score of : ', str('%.3f'%(pred_vals[0][0]*100)))
+            result = 'You are Normal with a probabality score of : ', str('%.3f'%(pred_vals[0][0]*100))
         else:
-            print('You have been diagnosed with Pneumonia on a Probabality score of:', str(pred_vals[0][1]*100))
-            result = 'You have been diagnosed with Pnuemonia on a probabality score of :', str(pred_vals[0][1]*100)
+            print('You have been diagnosed with Pneumonia on a Probabality score of : ', str('%.3f'%(pred_vals[0][1]*100)))
+            result = 'You have been diagnosed with Pnuemonia on a probabality score of : ', str('%.3f'%(pred_vals[0][1]*100))
     
     else:
         print("Error")
