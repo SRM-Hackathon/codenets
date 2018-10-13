@@ -12,6 +12,7 @@
         android:layout_margin="5dp"
         android:padding="10dp"
         android:text="Hello World"
+        android:autoLink="web"
         android:background="@drawable/user_message"
         android:layout_toLeftOf="@id/user_icon"/>
 

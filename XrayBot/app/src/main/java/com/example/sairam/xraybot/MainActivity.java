@@ -2,6 +2,7 @@ package com.example.sairam.xraybot;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -27,6 +28,12 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
+import ai.api.AIDataService;
+import ai.api.AIServiceException;
+import ai.api.android.AIConfiguration;
+import ai.api.model.AIRequest;
+import ai.api.model.AIResponse;
+
 public class MainActivity extends Activity {
 
     ImageButton uploadImgBtn;
@@ -35,6 +42,7 @@ public class MainActivity extends Activity {
     EditText inputMsgEdt;
     List<UserMessage> chatlist;
     public static final int PICK_XRAY_IMAGE = 1;
+    public static final String DIALOGFLOW_TOKEN = "11d22cdbc45b4f11b1ed9d1713e225bd";
 
     Handler handler = new Handler(Looper.getMainLooper()){
         @Override
@@ -92,8 +100,10 @@ public class MainActivity extends Activity {
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
 
                 if(!inputMsgEdt.getText().toString().isEmpty()) {
+
+                    getResponse(inputMsgEdt.getText().toString());
+
                     chatlist.add(new UserMessage(inputMsgEdt.getText().toString(), true));
-                    chatlist.add(new UserMessage(inputMsgEdt.getText().toString(), false));
                     messageAdapter.notifyDataSetChanged();
                     recyclerView.scrollToPosition(chatlist.size() - 1);
                     inputMsgEdt.setText("");
@@ -218,5 +228,41 @@ public class MainActivity extends Activity {
                 e.printStackTrace();
             }
         }
+    }
+
+    public void getResponse(String requestText){
+        final AIConfiguration config = new AIConfiguration(DIALOGFLOW_TOKEN,
+                AIConfiguration.SupportedLanguages.English,
+                AIConfiguration.RecognitionEngine.System);
+
+        final AIDataService aiDataService = new AIDataService(config);
+
+        final AIRequest aiRequest = new AIRequest();
+        aiRequest.setQuery(requestText);
+
+        new AsyncTask<AIRequest, Void, AIResponse>() {
+            @Override
+            protected AIResponse doInBackground(AIRequest... requests) {
+                final AIRequest request = requests[0];
+                try {
+                    final AIResponse response = aiDataService.request(aiRequest);
+                    return response;
+                } catch (AIServiceException e) {
+                }
+                return null;
+            }
+            @Override
+            protected void onPostExecute(AIResponse aiResponse) {
+                if (aiResponse != null) {
+                    // process aiResponse here
+                    String responseStr = aiResponse.getResult().getFulfillment().getSpeech();
+                    Message msg = new Message();
+                    msg.obj = new UserMessage(responseStr, false);
+                    handler.sendMessage(msg);
+                    Log.d("MyLog", responseStr);
+                }
+            }
+        }.execute(aiRequest);
+
     }
 }
